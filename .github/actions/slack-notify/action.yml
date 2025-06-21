@@ -22,22 +22,36 @@ runs:
       id: meta
       shell: bash
       run: |
-        echo "SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
-        echo "COMMIT_MSG=$(git log -1 --pretty=%s)" >> $GITHUB_ENV
-        echo "COMMIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}" >> $GITHUB_ENV
-        echo "COMMIT_COUNT=$(git rev-list --count ${GITHUB_EVENT_BEFORE}..${GITHUB_SHA})" >> $GITHUB_ENV
+        SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+        COMMIT_MSG=$(git log -1 --pretty=%s)
+        COMMIT_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+        BEFORE_SHA=$(jq -r .before "$GITHUB_EVENT_PATH")
+        COMPARE_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${BEFORE_SHA}...${GITHUB_SHA}"
+        COMMIT_COUNT=$(git rev-list --count "${BEFORE_SHA}..${GITHUB_SHA}")
+        BRANCH_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}"
+        AUTHOR_URL="${GITHUB_SERVER_URL}/${GITHUB_ACTOR}"
+
+        echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+        echo "COMMIT_MSG=$COMMIT_MSG" >> $GITHUB_ENV
+        echo "COMMIT_URL=$COMMIT_URL" >> $GITHUB_ENV
+        echo "COMPARE_URL=$COMPARE_URL" >> $GITHUB_ENV
+        echo "COMMIT_COUNT=$COMMIT_COUNT" >> $GITHUB_ENV
+        echo "BRANCH_URL=$BRANCH_URL" >> $GITHUB_ENV
+        echo "AUTHOR_URL=$AUTHOR_URL" >> $GITHUB_ENV
 
     - name: Send Slack Notification
       shell: bash
       run: |
         if [ "${{ inputs.status }}" = "start" ]; then
-          MESSAGE="${COMMIT_COUNT} new commit pushed to *${GITHUB_REF_NAME}* by *${GITHUB_ACTOR}*\n<${COMMIT_URL}|${SHORT_SHA}> - ${COMMIT_MSG}\n${GITHUB_REPOSITORY}\nDeployment started for ${{ inputs.service }} (*${{ inputs.environment }}*)"
+          MESSAGE="<${COMPARE_URL}|${COMMIT_COUNT} new commit> pushed to <${BRANCH_URL}|${GITHUB_REF_NAME}> by <${AUTHOR_URL}|${GITHUB_ACTOR}>\n   <${COMMIT_URL}|${SHORT_SHA}> – ${COMMIT_MSG}\n   ${GITHUB_REPOSITORY}\n   Deployment started for ${{ inputs.service }} (${{ inputs.environment }})"
         elif [ "${{ inputs.status }}" = "success" ]; then
-          MESSAGE="<${COMMIT_URL}|${SHORT_SHA}> - ${COMMIT_MSG}\nDeployment *succeeded* for ${{ inputs.service }} (*${{ inputs.environment }}*)\n${GITHUB_REPOSITORY}"
+          MESSAGE="   <${COMMIT_URL}|${SHORT_SHA}> – ${COMMIT_MSG}\n   Deployment *succeeded* for ${{ inputs.service }} (${{ inputs.environment }})\n   ${GITHUB_REPOSITORY}"
         elif [ "${{ inputs.status }}" = "failure" ]; then
-          MESSAGE="<${COMMIT_URL}|${SHORT_SHA}> - ${COMMIT_MSG}\n❌ Deployment *failed* for ${{ inputs.service }} (*${{ inputs.environment }}*)\n${GITHUB_REPOSITORY}"
+          MESSAGE="   <${COMMIT_URL}|${SHORT_SHA}> – ${COMMIT_MSG}\n   ❌ Deployment *failed* for ${{ inputs.service }} (${{ inputs.environment }})\n   ${GITHUB_REPOSITORY}"
         else
           echo "Invalid status"; exit 1
         fi
 
-        curl -X POST -H 'Content-type: application/json' --data "{\"text\": \"$MESSAGE\"}" ${{ inputs.slack_webhook }}
+        curl -X POST -H 'Content-type: application/json' \
+             --data "{\"text\": \"$MESSAGE\"}" \
+             ${{ inputs.slack_webhook }}
