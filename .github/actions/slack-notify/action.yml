@@ -22,6 +22,8 @@ runs:
       id: meta
       shell: bash
       run: |
+        git fetch --no-tags --prune --unshallow || git fetch --all
+    
         SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
         COMMIT_MSG=$(git log -1 --pretty=%s)
         COMMIT_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
@@ -30,7 +32,7 @@ runs:
         COMMIT_COUNT=$(git rev-list --count "${BEFORE_SHA}..${GITHUB_SHA}")
         BRANCH_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}"
         AUTHOR_URL="${GITHUB_SERVER_URL}/${GITHUB_ACTOR}"
-
+    
         echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
         echo "COMMIT_MSG=$COMMIT_MSG" >> $GITHUB_ENV
         echo "COMMIT_URL=$COMMIT_URL" >> $GITHUB_ENV
