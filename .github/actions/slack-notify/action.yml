@@ -47,9 +47,9 @@ runs:
         if [ "${{ inputs.status }}" = "start" ]; then
           MESSAGE="<${COMPARE_URL}|${COMMIT_COUNT} new commit> pushed to <${BRANCH_URL}|${GITHUB_REF_NAME}> by <${AUTHOR_URL}|${GITHUB_ACTOR}>\n   <${COMMIT_URL}|${SHORT_SHA}> – ${COMMIT_MSG}\n   ${GITHUB_REPOSITORY}\n   Deployment started for ${{ inputs.service }} (${{ inputs.environment }})"
         elif [ "${{ inputs.status }}" = "success" ]; then
-          MESSAGE="   <${COMMIT_URL}|${SHORT_SHA}> – ${COMMIT_MSG}\n   Deployment *succeeded* for ${{ inputs.service }} (${{ inputs.environment }})\n   ${GITHUB_REPOSITORY}"
+          MESSAGE="\n   <${COMMIT_URL}|${SHORT_SHA}> – ${COMMIT_MSG}\n   Deployment *succeeded* for ${{ inputs.service }} (${{ inputs.environment }})\n   ${GITHUB_REPOSITORY}"
         elif [ "${{ inputs.status }}" = "failure" ]; then
-          MESSAGE="   <${COMMIT_URL}|${SHORT_SHA}> – ${COMMIT_MSG}\n   ❌ Deployment *failed* for ${{ inputs.service }} (${{ inputs.environment }})\n   ${GITHUB_REPOSITORY}"
+          MESSAGE="\n   <${COMMIT_URL}|${SHORT_SHA}> – ${COMMIT_MSG}\n   ❌ Deployment *failed* for ${{ inputs.service }} (${{ inputs.environment }})\n   ${GITHUB_REPOSITORY}"
         else
           echo "Invalid status"; exit 1
         fi
